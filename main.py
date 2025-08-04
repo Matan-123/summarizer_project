@@ -1,31 +1,38 @@
 import os
 import concurrent.futures
 from dotenv import load_dotenv
-from core import init_client, get_article_text, split_text, analyze_text_part, combine_analyses
+from core import init_client, get_article_text, split_text, analyze_text_part, combine_analyses, extract_company_name
 
+# --- Load API key ---
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("❌ API key not found in .env file.")
 
+# --- Initialize OpenAI client ---
 init_client(api_key)
 
 if __name__ == "__main__":
-    user_input = input("Paste an article URL or text:\n").strip()
+    num_companies = int(input("How many companies do you want to analyze? (1-3): ").strip())
 
-    if user_input.startswith("http"):
-        text = get_article_text(user_input)
-    else:
-        text = user_input
+    for i in range(num_companies):
+        user_input = input(f"Paste an article URL or text for company #{i+1}:\n").strip()
 
-    parts = split_text(text)
-    print(f"📄 Text split into {len(parts)} part(s). Processing...")
+        if user_input.startswith("http"):
+            text = get_article_text(user_input)
+        else:
+            text = user_input
 
-    analyses = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        results = list(executor.map(analyze_text_part, parts))
-        analyses.extend(results)
+        parts = split_text(text)
+        print(f"📄 Text split into {len(parts)} part(s). Processing...")
 
-    final_analysis = combine_analyses(analyses)
-    print("\n=== Final Competitive Analysis ===\n")
-    print(final_analysis)
+        analyses = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            results = list(executor.map(analyze_text_part, parts))
+            analyses.extend(results)
+
+        company_name = extract_company_name(text)
+        final_analysis = combine_analyses(analyses)
+
+        print(f"\n=== Analysis of company {company_name} ===\n")
+        print(final_analysis)

@@ -1,6 +1,6 @@
 # Competitive Analysis Summarizer
 
-A Streamlit-based tool that analyzes company articles in Hebrew or English using the OpenAI API.  
+A Streamlit-based tool that analyzes competitor company articles in Hebrew or English using the OpenAI API.  
 It supports both URLs and pasted text, extracts and processes the content, and generates a structured competitive analysis:
 
 - Company Overview
@@ -13,17 +13,26 @@ It supports both URLs and pasted text, extracts and processes the content, and g
 - Works with Hebrew and English
 - Extracts article text automatically from URLs
 - Handles both short and long articles
-- Fast processing with parallel execution
+- Generates structured competitive analysis for a single company
+- Compares two companies side-by-side with **one concise summary**
+- Saves analysis history and comparison history
+- Allows adding and editing **Improvement** & **Preservation** notes
+- Analyzes CSV feedback and categorizes into:
+  - Bug
+  - Feature Request
+  - User Interface
+  - Other
 - Clean and interactive Streamlit interface
 
 ## Technologies
 - Python
 - Streamlit
 - OpenAI API
+- Pandas
 - newspaper3k
 - python-dotenv
 
 ## How to Run Locally
 ```bash
 pip install -r requirements.txt
-streamlit run streamlit_app.py
+streamlit run app.py
