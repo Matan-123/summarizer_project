@@ -3,12 +3,11 @@ pandas==2.2.2
 python-dotenv==1.0.1
 openai==1.40.0
 
-# Use lighter article extraction in the cloud
+# For Streamlit Cloud / Render article extraction
 trafilatura==1.8.0
-lxml<5.5.0
+lxml==4.9.4
 
-# Only keep essentials
+# Additional dependencies
 beautifulsoup4==4.12.3
 requests==2.31.0
-
-
+feedparser==6.0.11
