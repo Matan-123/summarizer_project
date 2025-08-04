@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from core import (
     init_client, get_article_text, split_text, analyze_text_part,
     combine_analyses, extract_company_name
+
 )
 from openai import OpenAI
 
@@ -376,3 +377,15 @@ if st.session_state.current_page == "feedback":
                     "classified_feedback.csv",
                     "text/csv"
                 )
+
+PASSWORD = os.getenv("APP_PASSWORD")
+
+if "password_ok" not in st.session_state:
+    st.session_state.password_ok = False
+
+if not st.session_state.password_ok:
+    pwd = st.text_input("Enter password to access:", type="password")
+    if pwd == PASSWORD:
+        st.session_state.password_ok = True
+    else:
+        st.stop()
