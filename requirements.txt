@@ -1,8 +1,18 @@
-streamlit
-pandas
-python-dotenv
-openai
-newspaper3k
-lxml
-trafilatura
+streamlit==1.35.0
+pandas==2.2.2
+python-dotenv==1.0.1
+openai==1.40.0
+
+# For local article extraction
+newspaper3k==0.2.8
+lxml==4.9.3
+
+# For Streamlit Cloud article extraction (instead of newspaper3k)
+trafilatura==1.8.0
+
+# Additional dependencies for newspaper3k and trafilatura
+beautifulsoup4==4.12.3
+requests==2.31.0
+feedparser==6.0.11
+
 
