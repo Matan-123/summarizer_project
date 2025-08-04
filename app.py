@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from core import (
     init_client, get_article_text, split_text, analyze_text_part,
     combine_analyses, extract_company_name
-
 )
 from openai import OpenAI
 
@@ -24,39 +23,22 @@ INSIGHTS_FILE = "insights.csv"
 ANALYSIS_HISTORY_FILE = "analysis_history.csv"
 COMPARE_HISTORY_FILE = "compare_history.csv"
 
-## --- Load existing insights ---
+# --- Load existing insights ---
 if os.path.exists(INSIGHTS_FILE):
-    try:
-        insights_df = pd.read_csv(INSIGHTS_FILE)
-        if insights_df.empty:
-            insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
-    except pd.errors.EmptyDataError:
-        insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
+    insights_df = pd.read_csv(INSIGHTS_FILE)
 else:
     insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
 
 # --- Load persistent history ---
 if os.path.exists(ANALYSIS_HISTORY_FILE):
-    try:
-        df_hist = pd.read_csv(ANALYSIS_HISTORY_FILE)
-        if df_hist.empty:
-            loaded_analysis_history = {}
-        else:
-            loaded_analysis_history = dict(zip(df_hist["Company"], df_hist["Analysis"]))
-    except pd.errors.EmptyDataError:
-        loaded_analysis_history = {}
+    df_hist = pd.read_csv(ANALYSIS_HISTORY_FILE)
+    loaded_analysis_history = dict(zip(df_hist["Company"], df_hist["Analysis"]))
 else:
     loaded_analysis_history = {}
 
 if os.path.exists(COMPARE_HISTORY_FILE):
-    try:
-        df_comp = pd.read_csv(COMPARE_HISTORY_FILE)
-        if df_comp.empty:
-            loaded_compare_history = {}
-        else:
-            loaded_compare_history = dict(zip(df_comp["Comparison"], df_comp["Result"]))
-    except pd.errors.EmptyDataError:
-        loaded_compare_history = {}
+    df_comp = pd.read_csv(COMPARE_HISTORY_FILE)
+    loaded_compare_history = dict(zip(df_comp["Comparison"], df_comp["Result"]))
 else:
     loaded_compare_history = {}
 
@@ -69,6 +51,8 @@ if "current_page" not in st.session_state:
     st.session_state.current_page = "home"
 if "analysis_result" not in st.session_state:
     st.session_state.analysis_result = None
+if "analysis_summary" not in st.session_state:
+    st.session_state.analysis_summary = None
 if "current_company" not in st.session_state:
     st.session_state.current_company = None
 if "expanded_history_item" not in st.session_state:
@@ -118,7 +102,7 @@ Reply with only the category name.
 
 # --- Sidebar Navigation ---
 nav_items = [
-    ("home", "🏠 Home"),
+    ("home", "<span style='font-size:17px; font-weight:bold;'>Home</span>"),
     ("analysis", "🏢 Competitor Articles Analysis"),
     ("compare", "📊 Compare Two Companies"),
     ("history", "📜 View Analysis History"),
@@ -130,11 +114,6 @@ nav_items = [
 for key, label in nav_items:
     if st.sidebar.button(label, key=f"nav_{key}"):
         st.session_state.current_page = key
-    if key == "home":
-        st.sidebar.markdown(
-            "<style>div.stButton > button:first-child {font-size:17px !important; font-weight:bold;}</style>",
-            unsafe_allow_html=True
-        )
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
 # --- Home Page ---
@@ -152,11 +131,6 @@ if st.session_state.current_page == "home":
     1. **Identify Company** – Detect the company name from the provided text or article link.
     2. **Analyze Company** – Generate a detailed competitive analysis in English.
 
-    **Features:**
-    - Automatically detect the company name.
-    - Detailed analysis with 5 sections.
-    - Allows you to add **Improvement Notes** and **Preservation Notes**.
-
     ---
 
     ### 📊 Compare Two Companies
@@ -165,13 +139,6 @@ if st.session_state.current_page == "home":
     **Process:**
     1. **Identify Both Companies** – Detect the names of both companies from the provided text or links.
     2. **Analyze & Compare** – Generate a side-by-side competitive comparison in English.
-
-    **Comparison covers:**
-    - 🎯 Target Market
-    - 💪 Strengths
-    - ⚠ Weaknesses
-    - 📦 Main Services or Products
-    - 📄 **Company Summary** – concise summary comparing both companies.
 
     ---
 
@@ -220,7 +187,17 @@ if st.session_state.current_page == "analysis":
             analyses = [analyze_text_part(p) for p in parts]
             analysis_text_only = combine_analyses(analyses)
 
+            summary_prompt = f"Summarize the following competitive analysis into one concise paragraph:\n\n{analysis_text_only}"
+            client = OpenAI(api_key=api_key)
+            summary_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": summary_prompt}],
+                temperature=0
+            )
+            company_summary = summary_response.choices[0].message.content.strip()
+
             st.session_state.analysis_result = analysis_text_only
+            st.session_state.analysis_summary = company_summary
             st.session_state.analysis_history[company_name] = analysis_text_only
             save_analysis_history()
 
@@ -228,6 +205,7 @@ if st.session_state.current_page == "analysis":
         company_name = st.session_state.current_company
         st.subheader(f"📌 Analysis of company {company_name}")
         st.write(st.session_state.analysis_result)
+        st.markdown(f"**Company Summary:** {st.session_state.analysis_summary}")
 
         existing_improve = st.session_state.get(f"{company_name}_improvement", "")
         existing_keep = st.session_state.get(f"{company_name}_keep", "")
@@ -237,13 +215,14 @@ if st.session_state.current_page == "analysis":
             existing_improve = existing["Improve"]
             existing_keep = existing["Keep"]
 
-        edit_improve = st.text_area("📈 How can I improve compared to this competitor?",
-                                    value=existing_improve, key=f"improve_input_{company_name}")
-        edit_keep = st.text_area("🏆 What should I keep doing because I’m better?",
-                                 value=existing_keep, key=f"keep_input_{company_name}")
+        st.subheader("📈 How can I improve compared to this competitor?")
+        improve_text = st.text_area("Edit Improvement Notes", value=existing_improve)
+
+        st.subheader("🏆 What should I keep doing because I’m better?")
+        keep_text = st.text_area("Edit Preservation Notes", value=existing_keep)
 
         if st.button("Save My Insights"):
-            save_insights_to_csv(company_name, edit_improve, edit_keep)
+            save_insights_to_csv(company_name, improve_text, keep_text)
             st.success("✅ Your insights have been saved.")
 
 # --- Compare Two Companies Page ---
@@ -272,7 +251,6 @@ if st.session_state.current_page == "compare":
             analysis1 = combine_analyses([analyze_text_part(p) for p in split_text(text1)])
             analysis2 = combine_analyses([analyze_text_part(p) for p in split_text(text2)])
 
-            # יצירת ההשוואה הראשית בלבד
             compare_prompt = f"""
 Compare these two companies based only on their analyses:
 
@@ -287,7 +265,6 @@ Focus on:
 2. Strengths
 3. Weaknesses
 4. Main Services or Products
-Provide the result in a structured way, ending with one concise summary paragraph only once.
 """
             client = OpenAI(api_key=api_key)
             compare_response = client.chat.completions.create(
@@ -296,11 +273,8 @@ Provide the result in a structured way, ending with one concise summary paragrap
                 temperature=0
             )
             comparison_result = compare_response.choices[0].message.content.strip()
-
-            # מציגים רק את ההשוואה עם סיכום אחד בפנים
             st.write(comparison_result)
 
-            # שמירה בהיסטוריה – בלי Summary נוסף
             st.session_state.compare_history[f"{name1} vs {name2}"] = comparison_result
             save_compare_history()
 
@@ -330,7 +304,7 @@ if st.session_state.current_page == "compare_history":
                 else:
                     st.session_state.expanded_compare_item = comp
             if st.session_state.expanded_compare_item == comp:
-                st.markdown(result)  # יציג גם את הסיכום שנשמר
+                st.write(result)
     else:
         st.info("No previous comparisons found.")
 
@@ -377,15 +351,3 @@ if st.session_state.current_page == "feedback":
                     "classified_feedback.csv",
                     "text/csv"
                 )
-
-PASSWORD = os.getenv("APP_PASSWORD")
-
-if "password_ok" not in st.session_state:
-    st.session_state.password_ok = False
-
-if not st.session_state.password_ok:
-    pwd = st.text_input("Enter password to access:", type="password")
-    if pwd == PASSWORD:
-        st.session_state.password_ok = True
-    else:
-        st.stop()
