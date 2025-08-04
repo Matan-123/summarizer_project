@@ -1,8 +1,17 @@
+import os
 import time
 from urllib.parse import urlparse
 from openai import OpenAI
-from newspaper import Article
 import re
+
+# זיהוי אם רץ בענן של Streamlit
+ON_STREAMLIT_CLOUD = os.environ.get("STREAMLIT_RUNTIME") is not None
+
+# ספריות לשליפת טקסט
+if not ON_STREAMLIT_CLOUD:
+    from newspaper import Article
+else:
+    import trafilatura
 
 client = None
 
@@ -14,10 +23,19 @@ def init_client(api_key):
 def get_article_text(url):
     """Fetch and return the main text content from a given article URL."""
     try:
-        article = Article(url)
-        article.download()
-        article.parse()
-        return article.text.strip()
+        if not ON_STREAMLIT_CLOUD:
+            # שימוש מקומי ב-newspaper3k
+            article = Article(url)
+            article.download()
+            article.parse()
+            return article.text.strip()
+        else:
+            # בענן שימוש ב-trafilatura
+            downloaded = trafilatura.fetch_url(url)
+            if downloaded:
+                text = trafilatura.extract(downloaded)
+                return text.strip() if text else ""
+            return ""
     except Exception as e:
         print(f"❌ Failed to fetch article: {e}")
         return ""
