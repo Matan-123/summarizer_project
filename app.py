@@ -23,22 +23,39 @@ INSIGHTS_FILE = "insights.csv"
 ANALYSIS_HISTORY_FILE = "analysis_history.csv"
 COMPARE_HISTORY_FILE = "compare_history.csv"
 
-# --- Load existing insights ---
+## --- Load existing insights ---
 if os.path.exists(INSIGHTS_FILE):
-    insights_df = pd.read_csv(INSIGHTS_FILE)
+    try:
+        insights_df = pd.read_csv(INSIGHTS_FILE)
+        if insights_df.empty:
+            insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
+    except pd.errors.EmptyDataError:
+        insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
 else:
     insights_df = pd.DataFrame(columns=["Company", "Improve", "Keep"])
 
 # --- Load persistent history ---
 if os.path.exists(ANALYSIS_HISTORY_FILE):
-    df_hist = pd.read_csv(ANALYSIS_HISTORY_FILE)
-    loaded_analysis_history = dict(zip(df_hist["Company"], df_hist["Analysis"]))
+    try:
+        df_hist = pd.read_csv(ANALYSIS_HISTORY_FILE)
+        if df_hist.empty:
+            loaded_analysis_history = {}
+        else:
+            loaded_analysis_history = dict(zip(df_hist["Company"], df_hist["Analysis"]))
+    except pd.errors.EmptyDataError:
+        loaded_analysis_history = {}
 else:
     loaded_analysis_history = {}
 
 if os.path.exists(COMPARE_HISTORY_FILE):
-    df_comp = pd.read_csv(COMPARE_HISTORY_FILE)
-    loaded_compare_history = dict(zip(df_comp["Comparison"], df_comp["Result"]))
+    try:
+        df_comp = pd.read_csv(COMPARE_HISTORY_FILE)
+        if df_comp.empty:
+            loaded_compare_history = {}
+        else:
+            loaded_compare_history = dict(zip(df_comp["Comparison"], df_comp["Result"]))
+    except pd.errors.EmptyDataError:
+        loaded_compare_history = {}
 else:
     loaded_compare_history = {}
 

@@ -1,2 +1,6 @@
 .env
 __pycache__/
+
+analysis_history.csv
+compare_history.csv
+insights.csv
