@@ -1,5 +1,6 @@
 import time
 import re
+import os
 from urllib.parse import urlparse
 from openai import OpenAI
 from newspaper import Article
@@ -36,20 +37,58 @@ def split_text(text, max_length=3000):
         parts.append(" ".join(current_part))
     return parts
 
+from urllib.parse import urlparse
+import os
+from openai import OpenAI
+
 def extract_company_name(text_or_url):
     """Extract company name from text or URL."""
     if text_or_url.startswith("http"):
-        domain = urlparse(text_or_url).netloc.replace("www.", "")
+        domain = urlparse(text_or_url).netloc.replace("www.", "").lower()
+
+        # רשימת אתרי חדשות ישראליים
         news_domains = [
             "ynet.co.il", "haaretz.co.il", "globes.co.il",
             "calcalist.co.il", "themarker.com", "mako.co.il",
             "bizportal.co.il", "walla.co.il", "maariv.co.il"
         ]
+
+        # אם זה אתר חדשות → נבקש מה-AI שם חברה מתוך התוכן
         if domain in news_domains:
             return _ask_gpt_for_company_name(get_article_text(text_or_url))
-        else:
-            return _split_camel_case_or_concat(domain.split(".")[0])
+
+        # אם זה אתר רגיל → ננסה קודם להוציא מהדומיין
+        base_name = domain.split(".")[0]
+        if base_name not in ["com", "co", "ac", "org", "net"]:
+            # אם זה נראה שם חברה אמיתי (כמו hit, tesla וכו')
+            return base_name.upper()
+
+        # אם לא מצאנו שם טוב מהדומיין → נשתמש ב-AI
+        return _ask_gpt_for_company_name(get_article_text(text_or_url))
+
+    # אם המשתמש נתן טקסט ולא לינק
     return _ask_gpt_for_company_name(text_or_url)
+
+
+def _ask_gpt_for_company_name(text):
+    """Ask GPT to extract a company name from text."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=api_key)
+
+    prompt = f"""
+Extract the company name from the following text or content.
+Return only the company name, nothing else.
+
+Content:
+{text}
+"""
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+    return response.choices[0].message.content.strip()
+
 
 def _ask_gpt_for_company_name(text):
     """Ask GPT to extract a clean company name."""

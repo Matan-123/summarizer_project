@@ -32,7 +32,12 @@ else:
 # --- Load persistent history ---
 if os.path.exists(ANALYSIS_HISTORY_FILE):
     df_hist = pd.read_csv(ANALYSIS_HISTORY_FILE)
-    loaded_analysis_history = dict(zip(df_hist["Company"], df_hist["Analysis"]))
+    loaded_analysis_history = {
+        row["Company"]: {
+            "analysis": row["Analysis"],
+            "summary": row.get("Summary", "")
+        } for _, row in df_hist.iterrows()
+    }
 else:
     loaded_analysis_history = {}
 
@@ -71,7 +76,11 @@ def save_insights_to_csv(company_name, improvement, keep):
 # --- Save functions for history ---
 def save_analysis_history():
     pd.DataFrame(
-        [{"Company": c, "Analysis": a} for c, a in st.session_state.analysis_history.items()]
+        [{
+            "Company": c,
+            "Analysis": v["analysis"],
+            "Summary": v["summary"]
+        } for c, v in st.session_state.analysis_history.items()]
     ).to_csv(ANALYSIS_HISTORY_FILE, index=False)
 
 def save_compare_history():
@@ -102,7 +111,7 @@ Reply with only the category name.
 
 # --- Sidebar Navigation ---
 nav_items = [
-    ("home", "<span style='font-size:17px; font-weight:bold;'>Home</span>"),
+    ("home", "Home"),
     ("analysis", "🏢 Competitor Articles Analysis"),
     ("compare", "📊 Compare Two Companies"),
     ("history", "📜 View Analysis History"),
@@ -116,7 +125,7 @@ for key, label in nav_items:
         st.session_state.current_page = key
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# --- Home Page ---
+# --- Home ---
 if st.session_state.current_page == "home":
     st.markdown("<h2 style='text-align: center; color: #2E86C1;'>Welcome to the Competitor Analysis Tool</h2>", unsafe_allow_html=True)
     st.markdown("""
@@ -124,64 +133,65 @@ if st.session_state.current_page == "home":
 
     ---
 
-    ### 🏢 Competitor Articles Analysis
-    Analyze a single company's article or provided text.
-
-    **Process:**
-    1. **Identify Company** – Detect the company name from the provided text or article link.
-    2. **Analyze Company** – Generate a detailed competitive analysis in English.
-
-    ---
-
-    ### 📊 Compare Two Companies
-    Compare two companies side-by-side.
-
-    **Process:**
-    1. **Identify Both Companies** – Detect the names of both companies from the provided text or links.
-    2. **Analyze & Compare** – Generate a side-by-side competitive comparison in English.
+    ### 🏢 Company Analysis
+    Paste a company article or link. The AI will:
+    - Detect the company name
+    - Analyze the content for:
+      * Target market
+      * Strengths
+      * Weaknesses
+      * Main products or services
+      * Key competitive insights
+    - **Provides a concise summary of the analysis.**
+    - **You can also write and save Improvement Notes and Preservation Notes for each company.**
 
     ---
 
-    ### 📜 View Analysis History
-    See all past single company analyses (saved permanently).
+    ### 📊 Compare Companies
+    Paste two articles or links. The AI will:
+    - Detect both company names
+    - Compare them based on:
+      * Target market
+      * Strengths
+      * Weaknesses
+      * Main products or services
+    - **Provides one final summary paragraph comparing both companies.**
 
     ---
 
-    ### 📜 View Company Comparison History
-    See all past company comparisons (saved permanently).
+    ### 📜 Analysis History
+    Review all past single company analyses.
 
-    ---
+    ### 📜 Company Comparison History
+    Review all past company comparisons.
 
     ### 📌 Improvement & Preservation Notes
-    Manage your saved notes for each company.
-    You can now **edit** or **delete** them anytime.
-
-    ---
+    Save and manage insights for each company.
 
     ### 💬 Feedback CSV Analysis
-    Upload a CSV with `feedback` column and auto-categorize into:
-    1. Bug
-    2. Feature Request
-    3. User Interface
-    4. Other
+    Classify feedback into Bug, Feature Request, User Interface, or Other.
     """)
 
 # --- Company Analysis Page ---
 if st.session_state.current_page == "analysis":
-    st.header("🏢 Competitor Articles Analysis (Single Company)")
+    st.header("🏢 Company Analysis")
     company_input = st.text_area("Paste article text OR URL for the competitor")
 
     if st.button("Identify Company"):
         detected_name = extract_company_name(company_input)
         st.session_state["detected_name"] = detected_name
+        st.session_state["company_input_saved"] = company_input
         st.success(f"**Detected company name:** {detected_name}")
 
     if "detected_name" in st.session_state and st.button("Analyze Company"):
         company_name = st.session_state["detected_name"]
         st.session_state.current_company = company_name
-        text = get_article_text(company_input) if company_input.startswith("http") else company_input
+
+        input_text_or_url = st.session_state.get("company_input_saved", "")
+        text = get_article_text(input_text_or_url) if input_text_or_url.startswith("http") else input_text_or_url
+
         if not text:
-            st.warning("⚠ Could not retrieve text for the company.")
+            st.error("Could not retrieve text for the company. Please provide a longer article or a valid URL.")
         else:
             parts = split_text(text)
             analyses = [analyze_text_part(p) for p in parts]
@@ -198,7 +208,10 @@ if st.session_state.current_page == "analysis":
 
             st.session_state.analysis_result = analysis_text_only
             st.session_state.analysis_summary = company_summary
-            st.session_state.analysis_history[company_name] = analysis_text_only
+            st.session_state.analysis_history[company_name] = {
+                "analysis": analysis_text_only,
+                "summary": company_summary
+            }
             save_analysis_history()
 
     if st.session_state.analysis_result and st.session_state.current_company:
@@ -225,6 +238,7 @@ if st.session_state.current_page == "analysis":
             save_insights_to_csv(company_name, improve_text, keep_text)
             st.success("✅ Your insights have been saved.")
 
+
 # --- Compare Two Companies Page ---
 if st.session_state.current_page == "compare":
     st.header("📊 Compare Two Companies")
@@ -234,20 +248,27 @@ if st.session_state.current_page == "compare":
         if st.button("Identify Company 1"):
             detected1 = extract_company_name(input1)
             st.session_state["detected_name1"] = detected1
+            st.session_state["company_input1_saved"] = input1
             st.success(f"**Detected company 1 name:** {detected1}")
     with col2:
         input2 = st.text_area("Company 2 article or URL")
         if st.button("Identify Company 2"):
             detected2 = extract_company_name(input2)
             st.session_state["detected_name2"] = detected2
+            st.session_state["company_input2_saved"] = input2
             st.success(f"**Detected company 2 name:** {detected2}")
 
     if "detected_name1" in st.session_state and "detected_name2" in st.session_state:
         if st.button("Compare"):
             name1 = st.session_state["detected_name1"]
             name2 = st.session_state["detected_name2"]
-            text1 = get_article_text(input1) if input1.startswith("http") else input1
-            text2 = get_article_text(input2) if input2.startswith("http") else input2
+
+            text1_input = st.session_state.get("company_input1_saved", "")
+            text2_input = st.session_state.get("company_input2_saved", "")
+
+            text1 = get_article_text(text1_input) if text1_input.startswith("http") else text1_input
+            text2 = get_article_text(text2_input) if text2_input.startswith("http") else text2_input
+
             analysis1 = combine_analyses([analyze_text_part(p) for p in split_text(text1)])
             analysis2 = combine_analyses([analyze_text_part(p) for p in split_text(text2)])
 
@@ -265,6 +286,7 @@ Focus on:
 2. Strengths
 3. Weaknesses
 4. Main Services or Products
+5. Provide one final summary paragraph comparing both companies.
 """
             client = OpenAI(api_key=api_key)
             compare_response = client.chat.completions.create(
@@ -282,14 +304,17 @@ Focus on:
 if st.session_state.current_page == "history":
     st.header("📜 Analysis History")
     if st.session_state.analysis_history:
-        for company, analysis in st.session_state.analysis_history.items():
+        for company, data in st.session_state.analysis_history.items():
             if st.button(company):
                 if st.session_state.expanded_history_item == company:
                     st.session_state.expanded_history_item = None
                 else:
                     st.session_state.expanded_history_item = company
             if st.session_state.expanded_history_item == company:
-                st.write(analysis)
+                st.subheader("Full Analysis")
+                st.write(data["analysis"])
+                st.subheader("Summary")
+                st.write(data["summary"])
     else:
         st.info("No previous analyses found.")
 
