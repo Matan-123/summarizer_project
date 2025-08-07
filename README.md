@@ -1,38 +1,69 @@
-# Competitive Analysis Summarizer
+# 🧠 Competitor Analysis Tool (Streamlit + OpenAI)
 
-A Streamlit-based tool that analyzes competitor company articles in Hebrew or English using the OpenAI API.  
-It supports both URLs and pasted text, extracts and processes the content, and generates a structured competitive analysis:
+An AI-powered web application that enables businesses and individuals to analyze competitors through articles or URLs. Built with **Streamlit**, **OpenAI API**, and **Python**, this app extracts meaningful insights, summarizes company strategies, and compares companies side-by-side.
 
-- Company Overview
-- Unique Selling Points (USP)
-- Target Market & Customers
-- Strategic Positioning
-- Potential Risks / Challenges
+---
 
-## Features
-- Works with Hebrew and English
-- Extracts article text automatically from URLs
-- Handles both short and long articles
-- Generates structured competitive analysis for a single company
-- Compares two companies side-by-side with **one concise summary**
-- Saves analysis history and comparison history
-- Allows adding and editing **Improvement** & **Preservation** notes
-- Analyzes CSV feedback and categorizes into:
+## 🚀 Features
+
+### 🏢 Single Company Analysis
+- Paste a competitor's article text or URL.
+- Automatically detects the company name.
+- Extracts and analyzes:
+  - Target Market
+  - Strengths & Weaknesses
+  - Main Products or Services
+  - Competitive Positioning
+- Provides a concise **English summary** of the analysis.
+- Lets you **save notes** for:
+  - Improvements you can make
+  - Practices you should keep
+
+### 📊 Compare Companies
+- Input two articles or URLs.
+- Extracts and compares both companies across:
+  - Target Market
+  - Strengths
+  - Weaknesses
+  - Main Services/Products
+- Generates a side-by-side comparison + final summary.
+
+### 📜 History
+- Automatically stores:
+  - Past company analyses
+  - Company comparisons
+- Results are persistent across sessions.
+
+### 🧠 Insights
+- Save & manage:
+  - “Improvement Notes”
+  - “Preservation Notes”
+- Fully editable and deletable.
+
+### 💬 CSV Feedback Categorization
+- Upload a `.csv` file with a `feedback` column.
+- Automatically categorizes user feedback into:
   - Bug
   - Feature Request
   - User Interface
   - Other
-- Clean and interactive Streamlit interface
 
-## Technologies
-- Python
-- Streamlit
-- OpenAI API
-- Pandas
-- newspaper3k
-- python-dotenv
+---
 
-## How to Run Locally
+## 📦 Tech Stack
+
+- **Python 3.10+**
+- **Streamlit**
+- **OpenAI API (GPT-4o)**
+- **Newspaper3k**, **Trafilatura** – for article parsing
+- **Pandas**, **BeautifulSoup**, **lxml**, **Feedparser**
+- **Dotenv** for local `.env` API key management
+
+---
+
+## 🛠 Setup Instructions
+
+### 1. Clone the repo
 ```bash
-pip install -r requirements.txt
-streamlit run app.py
+git clone https://github.com/YOUR_USERNAME/summarizer_project.git
+cd summarizer_project

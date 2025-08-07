@@ -261,19 +261,20 @@ if st.session_state.current_page == "compare":
 
     if "detected_name1" in st.session_state and "detected_name2" in st.session_state:
         if st.button("Compare"):
-            name1 = st.session_state["detected_name1"]
-            name2 = st.session_state["detected_name2"]
+            with st.spinner("Comparing companies, please wait..."):
+                name1 = st.session_state["detected_name1"]
+                name2 = st.session_state["detected_name2"]
 
-            text1_input = st.session_state.get("company_input1_saved", "")
-            text2_input = st.session_state.get("company_input2_saved", "")
+                text1_input = st.session_state.get("company_input1_saved", "")
+                text2_input = st.session_state.get("company_input2_saved", "")
 
-            text1 = get_article_text(text1_input) if text1_input.startswith("http") else text1_input
-            text2 = get_article_text(text2_input) if text2_input.startswith("http") else text2_input
+                text1 = get_article_text(text1_input) if text1_input.startswith("http") else text1_input
+                text2 = get_article_text(text2_input) if text2_input.startswith("http") else text2_input
 
-            analysis1 = combine_analyses([analyze_text_part(p) for p in split_text(text1)])
-            analysis2 = combine_analyses([analyze_text_part(p) for p in split_text(text2)])
+                analysis1 = combine_analyses([analyze_text_part(p) for p in split_text(text1)])
+                analysis2 = combine_analyses([analyze_text_part(p) for p in split_text(text2)])
 
-            compare_prompt = f"""
+                compare_prompt = f"""
 Compare these two companies based only on their analyses:
 
 Company 1 ({name1}):
@@ -289,17 +290,17 @@ Focus on:
 4. Main Services or Products
 5. Provide one final summary paragraph comparing both companies.
 """
-            client = OpenAI(api_key=api_key)
-            compare_response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": compare_prompt}],
-                temperature=0
-            )
-            comparison_result = compare_response.choices[0].message.content.strip()
-            st.write(comparison_result)
+                client = OpenAI(api_key=api_key)
+                compare_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": compare_prompt}],
+                    temperature=0
+                )
+                comparison_result = compare_response.choices[0].message.content.strip()
+                st.write(comparison_result)
 
-            st.session_state.compare_history[f"{name1} vs {name2}"] = comparison_result
-            save_compare_history()
+                st.session_state.compare_history[f"{name1} vs {name2}"] = comparison_result
+                save_compare_history()
 
 # --- Analysis History Page ---
 if st.session_state.current_page == "history":
@@ -369,11 +370,12 @@ if st.session_state.current_page == "feedback":
             st.error("The CSV must contain a 'feedback' column.")
         else:
             if st.button("Classify Feedback"):
-                df["category"] = df["feedback"].apply(classify_feedback)
-                st.dataframe(df)
-                st.download_button(
-                    "📥 Download Classified CSV",
-                    df.to_csv(index=False).encode("utf-8"),
-                    "classified_feedback.csv",
-                    "text/csv"
-                )
+                with st.spinner("Classifying feedback, please wait..."):
+                    df["category"] = df["feedback"].apply(classify_feedback)
+                    st.dataframe(df)
+                    st.download_button(
+                        "📥 Download Classified CSV",
+                        df.to_csv(index=False).encode("utf-8"),
+                        "classified_feedback.csv",
+                        "text/csv"
+                    )
