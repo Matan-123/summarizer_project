@@ -188,31 +188,32 @@ if st.session_state.current_page == "analysis":
         st.session_state.current_company = company_name
 
         input_text_or_url = st.session_state.get("company_input_saved", "")
-        text = get_article_text(input_text_or_url) if input_text_or_url.startswith("http") else input_text_or_url
+        with st.spinner("Analyzing company, please wait..."):
+            text = get_article_text(input_text_or_url) if input_text_or_url.startswith("http") else input_text_or_url
 
-        if not text:
-            st.error("Could not retrieve text for the company. Please provide a longer article or a valid URL.")
-        else:
-            parts = split_text(text)
-            analyses = [analyze_text_part(p) for p in parts]
-            analysis_text_only = combine_analyses(analyses)
+            if not text:
+                st.error("Could not retrieve text for the company. Please provide a longer article or a valid URL.")
+            else:
+                parts = split_text(text)
+                analyses = [analyze_text_part(p) for p in parts]
+                analysis_text_only = combine_analyses(analyses)
 
-            summary_prompt = f"Summarize the following competitive analysis into one concise paragraph:\n\n{analysis_text_only}"
-            client = OpenAI(api_key=api_key)
-            summary_response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": summary_prompt}],
-                temperature=0
-            )
-            company_summary = summary_response.choices[0].message.content.strip()
+                summary_prompt = f"Summarize the following competitive analysis into one concise paragraph:\n\n{analysis_text_only}"
+                client = OpenAI(api_key=api_key)
+                summary_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": summary_prompt}],
+                    temperature=0
+                )
+                company_summary = summary_response.choices[0].message.content.strip()
 
-            st.session_state.analysis_result = analysis_text_only
-            st.session_state.analysis_summary = company_summary
-            st.session_state.analysis_history[company_name] = {
-                "analysis": analysis_text_only,
-                "summary": company_summary
-            }
-            save_analysis_history()
+                st.session_state.analysis_result = analysis_text_only
+                st.session_state.analysis_summary = company_summary
+                st.session_state.analysis_history[company_name] = {
+                    "analysis": analysis_text_only,
+                    "summary": company_summary
+                }
+                save_analysis_history()
 
     if st.session_state.analysis_result and st.session_state.current_company:
         company_name = st.session_state.current_company
