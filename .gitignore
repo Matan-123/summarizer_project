@@ -4,3 +4,4 @@ venv/
 analysis_history.csv
 compare_history.csv
 insights.csv
+.idea/
