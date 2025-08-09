@@ -67,3 +67,19 @@ An AI-powered web application that enables businesses and individuals to analyze
 ```bash
 git clone https://github.com/YOUR_USERNAME/summarizer_project.git
 cd summarizer_project
+
+**2. Install dependencies**
+Make sure you have Python 3.10+ installed, then run:
+
+```bash
+pip install -r requirements.txt
+
+**3. Set your API token**
+This project requires an API token to work.
+Create a .env file in the root directory and add:
+OPENAI_API_KEY=your_api_token_here
+🔒 Important: Never commit your API key to GitHub. The .env file is already in .gitignore for security.
+
+4. Run the app
+```bash
+streamlit run app.py
