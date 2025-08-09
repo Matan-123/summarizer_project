@@ -98,13 +98,15 @@ Rules:
 - Ignore website names, publisher names, or other companies mentioned in passing
 - No location.
 - No legal entity suffix (Ltd, Inc, etc.).
-- Only in English (translate if needed).
+- ALWAYS return the company name in English only
+- If the company name is in another language, translate it to English
 - Keep correct spacing between words (e.g., "Coca Cola" not "cocacola").
 - Capitalize each word correctly.
 - Do not merge or remove spaces between words.
 - If the article is about Coca-Cola, return "Coca-Cola"
 - If the article is about Apple, return "Apple"
 - Focus on the main subject company, not the website hosting the article
+- IMPORTANT: Always translate non-English company names to English
 
 Text:
 {text}

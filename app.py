@@ -83,6 +83,10 @@ if "expanded_history_item" not in st.session_state:
     st.session_state.expanded_history_item = None
 if "expanded_compare_item" not in st.session_state:
     st.session_state.expanded_compare_item = None
+if "comparison_in_progress" not in st.session_state:
+    st.session_state.comparison_in_progress = False
+if "comparison_completed" not in st.session_state:
+    st.session_state.comparison_completed = False
 
 # --- Save insights ---
 def save_insights_to_csv(company_name, improvement, keep):
@@ -127,6 +131,38 @@ Reply with only the category name.
         temperature=0
     )
     return response.choices[0].message.content.strip()
+
+# --- Helper for translating company names to English ---
+def translate_company_name_to_english(company_name):
+    """Translate company name to English if it's not already in English."""
+    if not company_name:
+        return company_name
+    
+    # Check if the name contains non-English characters
+    if any(ord(char) > 127 for char in company_name):
+        prompt = f"""
+Translate this company name to English. Return only the English name, nothing else.
+
+Company name: {company_name}
+
+Rules:
+- If it's already in English, return it as is
+- If it's in another language, translate it to English
+- Keep proper capitalization
+- Return only the company name, no explanations
+"""
+        try:
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            return response.choices[0].message.content.strip()
+        except:
+            return company_name
+    
+    return company_name
 
 # --- Sidebar Navigation ---
 nav_items = [
@@ -201,6 +237,10 @@ if st.session_state.current_page == "analysis":
             detected_name = extract_company_name(company_input)
             st.session_state["detected_name"] = detected_name
             st.session_state["company_input_saved"] = company_input
+    
+    # Show detected company name if available
+    if "detected_name" in st.session_state:
+        st.info(f"✅ **Detected Company:** {st.session_state['detected_name']}")
 
     if "detected_name" in st.session_state and st.button("Analyze Company"):
         company_name = st.session_state["detected_name"]
@@ -236,7 +276,9 @@ if st.session_state.current_page == "analysis":
 
     if st.session_state.analysis_result and st.session_state.current_company:
         company_name = st.session_state.current_company
-        st.subheader(f"📌 Analysis of company {company_name}")
+        # Ensure company name is in English for display
+        english_company_name = translate_company_name_to_english(company_name)
+        st.subheader(f"📌 Analysis of company {english_company_name}")
         st.write(st.session_state.analysis_result)
         st.markdown(f"**Company Summary:** {st.session_state.analysis_summary}")
 
@@ -270,9 +312,12 @@ if st.session_state.current_page == "compare":
                 detected1 = extract_company_name(input1)
                 st.session_state["detected_name1"] = detected1
                 st.session_state["company_input1_saved"] = input1
+                # Reset comparison flags when starting fresh
+                st.session_state["comparison_in_progress"] = False
+                st.session_state["comparison_completed"] = False
         
-        # Show detected company 1 name if available
-        if "detected_name1" in st.session_state:
+        # Show detected company 1 name if available (but not during comparison)
+        if "detected_name1" in st.session_state and not st.session_state.get("comparison_in_progress", False):
             st.info(f"✅ **Company 1:** {st.session_state['detected_name1']}")
             
     with col2:
@@ -282,13 +327,28 @@ if st.session_state.current_page == "compare":
                 detected2 = extract_company_name(input2)
                 st.session_state["detected_name2"] = detected2
                 st.session_state["company_input2_saved"] = input2
+                # Reset comparison flags when starting fresh
+                st.session_state["comparison_in_progress"] = False
+                st.session_state["comparison_completed"] = False
         
-        # Show detected company 2 name if available
-        if "detected_name2" in st.session_state:
+        # Show detected company 2 name if available (but not during comparison)
+        if "detected_name2" in st.session_state and not st.session_state.get("comparison_in_progress", False):
             st.info(f"✅ **Company 2:** {st.session_state['detected_name2']}")
 
+    # Show comparison button when both companies are identified
     if "detected_name1" in st.session_state and "detected_name2" in st.session_state:
-        if st.button("Compare"):
+        if not st.session_state.get("comparison_in_progress", False):
+            if st.button("Compare"):
+                # Set flag to prevent duplicate display during comparison
+                st.session_state["comparison_in_progress"] = True
+                st.session_state["comparison_completed"] = False
+                st.rerun()  # Force rerun to start comparison
+            
+        # Show comparison result if comparison is in progress
+        if st.session_state.get("comparison_in_progress", False) and not st.session_state.get("comparison_completed", False):
+            # Show company names during comparison (only once)
+            st.info(f"🔄 **Comparing:** {st.session_state['detected_name1']} vs {st.session_state['detected_name2']}")
+            
             with st.spinner("Comparing companies, please wait..."):
                 name1 = st.session_state["detected_name1"]
                 name2 = st.session_state["detected_name2"]
@@ -328,7 +388,17 @@ Focus on:
                 st.write(comparison_result)
 
                 st.session_state.compare_history[f"{name1} vs {name2}"] = comparison_result
+                st.session_state["comparison_result"] = comparison_result
                 save_compare_history()
+                
+                # Mark comparison as completed
+                st.session_state["comparison_completed"] = True
+                st.session_state["comparison_in_progress"] = False
+        
+        # Show final result after comparison is completed
+        elif st.session_state.get("comparison_completed", False):
+            st.success("✅ **Comparison completed!**")
+            st.write(st.session_state.get("comparison_result", ""))
 
 # --- Analysis History Page ---
 if st.session_state.current_page == "history":
