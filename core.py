@@ -18,7 +18,14 @@ def get_article_text(url):
         article = Article(url)
         article.download()
         article.parse()
-        return article.text.strip()
+        
+        # Get both text and title for better company name extraction
+        text = article.text.strip()
+        title = article.title.strip() if article.title else ""
+        
+        # Combine title and text for better context
+        full_content = f"Title: {title}\n\nContent: {text}"
+        return full_content
     except Exception as e:
         print(f"❌ Failed to fetch article: {e}")
         return ""
@@ -44,29 +51,20 @@ from openai import OpenAI
 def extract_company_name(text_or_url):
     """Extract company name from text or URL."""
     if text_or_url.startswith("http"):
-        domain = urlparse(text_or_url).netloc.replace("www.", "").lower()
+        # For URLs, always extract the company name from the article content
+        # rather than trying to guess from the domain
+        article_text = get_article_text(text_or_url)
+        if article_text:
+            return _ask_gpt_for_company_name(article_text)
+        else:
+            # Fallback to domain extraction if article text is empty
+            domain = urlparse(text_or_url).netloc.replace("www.", "").lower()
+            base_name = domain.split(".")[0]
+            if base_name not in ["com", "co", "ac", "org", "net", "thebrandhopper"]:
+                return base_name.upper()
+            return "Unknown Company"
 
-        # רשימת אתרי חדשות ישראליים
-        news_domains = [
-            "ynet.co.il", "haaretz.co.il", "globes.co.il",
-            "calcalist.co.il", "themarker.com", "mako.co.il",
-            "bizportal.co.il", "walla.co.il", "maariv.co.il"
-        ]
-
-        # אם זה אתר חדשות → נבקש מה-AI שם חברה מתוך התוכן
-        if domain in news_domains:
-            return _ask_gpt_for_company_name(get_article_text(text_or_url))
-
-        # אם זה אתר רגיל → ננסה קודם להוציא מהדומיין
-        base_name = domain.split(".")[0]
-        if base_name not in ["com", "co", "ac", "org", "net"]:
-            # אם זה נראה שם חברה אמיתי (כמו hit, tesla וכו')
-            return base_name.upper()
-
-        # אם לא מצאנו שם טוב מהדומיין → נשתמש ב-AI
-        return _ask_gpt_for_company_name(get_article_text(text_or_url))
-
-    # אם המשתמש נתן טקסט ולא לינק
+    # If user provided text instead of a link
     return _ask_gpt_for_company_name(text_or_url)
 
 
@@ -93,15 +91,20 @@ Content:
 def _ask_gpt_for_company_name(text):
     """Ask GPT to extract a clean company name."""
     prompt = f"""
-From the following text, extract ONLY the company name.
+From the following text, extract ONLY the main company name that the article is about.
 
 Rules:
+- Extract the PRIMARY company being discussed in the article
+- Ignore website names, publisher names, or other companies mentioned in passing
 - No location.
 - No legal entity suffix (Ltd, Inc, etc.).
 - Only in English (translate if needed).
-- Keep correct spacing between words (e.g., "Profit Gym" not "profitgym").
+- Keep correct spacing between words (e.g., "Coca Cola" not "cocacola").
 - Capitalize each word correctly.
 - Do not merge or remove spaces between words.
+- If the article is about Coca-Cola, return "Coca-Cola"
+- If the article is about Apple, return "Apple"
+- Focus on the main subject company, not the website hosting the article
 
 Text:
 {text}

@@ -18,6 +18,25 @@ if not api_key:
 # --- Initialize client ---
 init_client(api_key)
 
+# --- Show loading on startup ---
+if "app_loaded" not in st.session_state:
+    # Create a centered loading display
+    st.markdown("""
+    <div style="display: flex; justify-content: center; align-items: center; height: 50vh;">
+        <div style="text-align: center;">
+            <h1 style="font-size: 3rem; margin-bottom: 2rem;">🚀</h1>
+            <h2 style="font-size: 2rem; color: #2E86C1; margin-bottom: 1rem;">Loading Competitor Analysis Tool</h2>
+            <div style="font-size: 1.5rem; color: #666;">Please wait...</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    import time
+    time.sleep(3)  # Simulate loading time
+    
+    st.session_state.app_loaded = True
+    st.rerun()  # Refresh the page to show the actual app
+
 # --- Files for storing user data ---
 INSIGHTS_FILE = "insights.csv"
 ANALYSIS_HISTORY_FILE = "analysis_history.csv"
@@ -178,10 +197,10 @@ if st.session_state.current_page == "analysis":
     company_input = st.text_area("Paste article text OR URL for the competitor")
 
     if st.button("Identify Company"):
-        detected_name = extract_company_name(company_input)
-        st.session_state["detected_name"] = detected_name
-        st.session_state["company_input_saved"] = company_input
-        st.success(f"**Detected company name:** {detected_name}")
+        with st.spinner("🔍 Identifying company, please wait..."):
+            detected_name = extract_company_name(company_input)
+            st.session_state["detected_name"] = detected_name
+            st.session_state["company_input_saved"] = company_input
 
     if "detected_name" in st.session_state and st.button("Analyze Company"):
         company_name = st.session_state["detected_name"]
@@ -247,17 +266,26 @@ if st.session_state.current_page == "compare":
     with col1:
         input1 = st.text_area("Company 1 article or URL")
         if st.button("Identify Company 1"):
-            detected1 = extract_company_name(input1)
-            st.session_state["detected_name1"] = detected1
-            st.session_state["company_input1_saved"] = input1
-            st.success(f"**Detected company 1 name:** {detected1}")
+            with st.spinner("🔍 Identifying Company 1, please wait..."):
+                detected1 = extract_company_name(input1)
+                st.session_state["detected_name1"] = detected1
+                st.session_state["company_input1_saved"] = input1
+        
+        # Show detected company 1 name if available
+        if "detected_name1" in st.session_state:
+            st.info(f"✅ **Company 1:** {st.session_state['detected_name1']}")
+            
     with col2:
         input2 = st.text_area("Company 2 article or URL")
         if st.button("Identify Company 2"):
-            detected2 = extract_company_name(input2)
-            st.session_state["detected_name2"] = detected2
-            st.session_state["company_input2_saved"] = input2
-            st.success(f"**Detected company 2 name:** {detected2}")
+            with st.spinner("🔍 Identifying Company 2, please wait..."):
+                detected2 = extract_company_name(input2)
+                st.session_state["detected_name2"] = detected2
+                st.session_state["company_input2_saved"] = input2
+        
+        # Show detected company 2 name if available
+        if "detected_name2" in st.session_state:
+            st.info(f"✅ **Company 2:** {st.session_state['detected_name2']}")
 
     if "detected_name1" in st.session_state and "detected_name2" in st.session_state:
         if st.button("Compare"):
