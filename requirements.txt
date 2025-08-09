@@ -4,6 +4,7 @@ python-dotenv==1.0.1
 openai==1.98.0
 newspaper3k==0.2.8
 # For Streamlit Cloud / Render article extraction
+streamlit==1.47.1
 trafilatura==1.8.0
 lxml==5.4.0
 lxml_html_clean==0.4.2
