@@ -65,23 +65,22 @@ An AI-powered web application that enables businesses and individuals to analyze
 
 🚀 How to Run the Project
 ### 1. Clone the repo
-bash
+'''bash
 git clone https://github.com/YOUR_USERNAME/summarizer_project.git
 cd summarizer_project
 
 ### 2. Install dependencies
-bash
+'''bash
 pip install -r requirements.txt
 
 ### 3. Set your API token
-bash
+'''bash
 Create a .env file in the project root with:
 OPENAI_API_KEY=your_api_token_here
 
-### Create a .env file in the project root with:
 OPENAI_API_KEY=your_api_token_here
 4. Run the app
-bash
+'''bash
 streamlit run app.py
 
 
