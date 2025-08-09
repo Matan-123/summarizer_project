@@ -68,6 +68,7 @@ An AI-powered web application that enables businesses and individuals to analyze
 bash
 
 git clone https://github.com/YOUR_USERNAME/summarizer_project.git
+
 cd summarizer_project
 
 ### 2. Install dependencies
@@ -81,8 +82,7 @@ bash
 Create a .env file in the project root with:
 OPENAI_API_KEY=your_api_token_here
 
-OPENAI_API_KEY=your_api_token_here
-4. Run the app
+# 4. Run the app
 bash
 
 streamlit run app.py
