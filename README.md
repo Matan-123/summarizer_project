@@ -68,6 +68,4 @@ An AI-powered web application that enables businesses and individuals to analyze
 git clone https://github.com/YOUR_USERNAME/summarizer_project.git
 cd summarizer_project
 
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
+
