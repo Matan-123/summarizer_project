@@ -65,12 +65,12 @@ An AI-powered web application that enables businesses and individuals to analyze
 
 🚀 How to Run the Project
 ### 1. Clone the repo
-bash
+```bash
 
 git clone https://github.com/YOUR_USERNAME/summarizer_project.git
 
 cd summarizer_project
-
+```
 ### 2. Install dependencies
 bash
 
